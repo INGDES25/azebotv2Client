@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
 import {NewsCarousel}  from './components/NewsCarousel';
+import ArticleDetails from "./pages/ArticleDetails"; 
 
 const queryClient = new QueryClient();
 const App = () => (
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/pronostic-request" element={<PronosticRequest />} />
             <Route path="/analysis/:id" element={<AnalysisDetails />} />
             <Route path="/payment/:articleId" element={<Payment />} />
+            <Route path="/article/:articleId" element={<ArticleDetails />} /> 
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-cancel" element={<PaymentCancel />} />
             <Route path="*" element={<NotFound />} />
