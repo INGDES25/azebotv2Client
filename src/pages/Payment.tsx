@@ -7,7 +7,9 @@ import { useAuth } from '../hooks/useAuth'; // Ajout de l'import
 import { Shield, CreditCard, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import azebotHero from '../assets/azebot-hero.jpg';
 import paiementSecurise from '../assets/paiement-securise.png';
-import { API_BASE_URL } from '../config/api';
+//import { API_BASE_URL } from '../config/api';
+
+
 
 interface Article {
   id: string;
@@ -18,6 +20,9 @@ interface Article {
   asset?: string;
   match?: string;
 }
+
+
+const API_BASE_URL = 'https://azebot-server.onrender.com' ;
 
 
 const Payment = () => {
