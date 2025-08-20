@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../integrations/firebase/client';
+import { useAuth } from '../hooks/useAuth'; // Ajout de l'import
 import { Shield, CreditCard, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import azebotHero from '../assets/azebot-hero.jpg';
 import paiementSecurise from '../assets/paiement-securise.png';
@@ -18,9 +19,11 @@ interface Article {
   match?: string;
 }
 
+
 const Payment = () => {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth(); // Récupération de l'utilisateur connecté
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,11 +83,12 @@ const Payment = () => {
         amount: article.price,
         description: `Paiement pour l'article: ${article.title}`,
         customer: {
-          firstname: 'Prénom',
-          lastname: 'Nom',
-          email: 'email@example.com'
+          firstname: user?.displayName?.split(' ')[0] || 'Prénom',
+          lastname: user?.displayName?.split(' ')[1] || 'Nom',
+          email: user?.email || 'email@example.com'
         },
-        articleId: article.id
+        articleId: article.id,
+        userId: user?.uid // Ajout de l'ID utilisateur
       }, {
         timeout: 10000,
         headers: {
@@ -93,7 +97,7 @@ const Payment = () => {
       });
       
       console.log('Réponse du serveur:', response.data);
-
+      
       if (response.data.success) {
         console.log('Redirection vers:', response.data.url);
         window.location.replace(response.data.url);
