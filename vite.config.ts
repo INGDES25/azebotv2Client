@@ -25,4 +25,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+
+  build: {
+    // Pour s'assurer que les ressources sont bien chargées
+    assetsInlineLimit: 4096,
+  },
+
+
 }));

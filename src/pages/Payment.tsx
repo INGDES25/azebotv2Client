@@ -6,6 +6,7 @@ import { db } from '../integrations/firebase/client';
 import { Shield, CreditCard, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import azebotHero from '../assets/azebot-hero.jpg';
 import paiementSecurise from '../assets/paiement-securise.png';
+import { API_BASE_URL } from '../config/api';
 
 interface Article {
   id: string;
@@ -75,7 +76,7 @@ const Payment = () => {
       
       console.log('Envoi de la requête de paiement...');
       
-      const response = await axios.post('/api/create-payment', {
+      const response = await axios.post(`${API_BASE_URL}/api/create-payment`, {
         amount: article.price,
         description: `Paiement pour l'article: ${article.title}`,
         customer: {
@@ -116,7 +117,7 @@ const Payment = () => {
   const testBackendConnection = async () => {
     try {
       console.log('Test de connexion au backend...');
-      const response = await axios.get('/api/test', {
+      const response = await axios.get(`${API_BASE_URL}/api/test`, {
         timeout: 5000
       });
       console.log('Test backend réussi:', response.data);
