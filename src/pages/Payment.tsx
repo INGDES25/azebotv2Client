@@ -104,6 +104,10 @@ const Payment = () => {
       console.log('Réponse du serveur:', response.data);
       
       if (response.data.success) {
+         // Stocker l'ID de l'article dans le localStorage avant la redirection
+      localStorage.setItem('lastArticleId', article.id);
+      console.log('Article ID stocké dans localStorage:', article.id);
+      
         console.log('Redirection vers:', response.data.url);
         window.location.replace(response.data.url);
       } else {
