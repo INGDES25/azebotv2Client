@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../integrations/firebase/client';
-import { useAuth } from '../hooks/useAuth';
-import { Lock, Unlock, ArrowLeft, CreditCard, CheckCircle } from 'lucide-react';
-
+import { ArrowLeft } from 'lucide-react';
+import '../styles/ArticleDetails.css';
 
 interface Article {
   id: string;
@@ -18,17 +17,14 @@ interface Article {
   paymentDate?: any;
   paymentAmount?: number;
   paymentMethod?: string;
-  paidBy?: string; // ID de l'utilisateur qui a payé
 }
 
 const ArticleDetails = () => {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
     if (!articleId) {
@@ -56,31 +52,11 @@ const ArticleDetails = () => {
             paymentStatus: data.paymentStatus || 'pending',
             paymentDate: data.paymentDate,
             paymentAmount: data.paymentAmount,
-            paymentMethod: data.paymentMethod,
-            paidBy: data.paidBy
+            paymentMethod: data.paymentMethod
           } as Article;
           
           setArticle(articleData);
-          
-          // Vérifier si l'utilisateur a accès
-          let accessGranted = false;
-          if (articleData.price === 0) {
-            // Article gratuit
-            accessGranted = true;
-          } else if (articleData.paymentStatus === 'paid') {
-            // Article payé
-            if (user && user.uid === articleData.paidBy) {
-              // L'utilisateur connecté est celui qui a payé
-              accessGranted = true;
-            }
-          }
-          
-          setHasAccess(accessGranted);
-          
-          console.log("Statut de paiement:", articleData.paymentStatus);
-          console.log("Utilisateur connecté:", user?.uid);
-          console.log("Payé par:", articleData.paidBy);
-          console.log("Accès accordé:", accessGranted);
+          console.log("Article récupéré avec succès");
         } else {
           setError('Article non trouvé');
         }
@@ -93,13 +69,7 @@ const ArticleDetails = () => {
     };
 
     fetchArticle();
-  }, [articleId, user]);
-
-  const handlePayment = () => {
-    if (article) {
-      navigate(`/payment/${article.id}`);
-    }
-  };
+  }, [articleId]);
 
   if (loading) {
     return (
@@ -156,12 +126,10 @@ const ArticleDetails = () => {
             <div className={`payment-status ${article.paymentStatus}`}>
               {article.paymentStatus === 'paid' ? (
                 <>
-                  <Unlock className="w-4 h-4" />
-                  Accès payé
+                  ✓ Payé
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" />
                   {article.price} FCFA
                 </>
               )}
@@ -177,29 +145,9 @@ const ArticleDetails = () => {
       )}
 
       <div className="article-content">
-        {hasAccess ? (
-          <div className="content-full">
-            <div className="access-badge">
-              <CheckCircle className="w-5 h-5" />
-              Accès complet
-            </div>
-            <div className="article-text">
-              {article.content}
-            </div>
-          </div>
-        ) : (
-          <div className="content-locked">
-            <div className="lock-icon">
-              <Lock className="w-16 h-16" />
-            </div>
-            <h2>Contenu réservé aux membres payants</h2>
-            <p>Cet article est disponible pour {article.price} FCFA.</p>
-            <button onClick={handlePayment} className="pay-button">
-              <CreditCard className="w-5 h-5" />
-              Payer pour débloquer
-            </button>
-          </div>
-        )}
+        <div className="article-text">
+          {article.content}
+        </div>
       </div>
 
       {article.paymentStatus === 'paid' && (
