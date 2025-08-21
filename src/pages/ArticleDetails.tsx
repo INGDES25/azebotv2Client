@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../integrations/firebase/client';
 import { useAuth } from '../hooks/useAuth';
-import { Lock, Unlock, ArrowLeft, CreditCard, CheckCircle } from 'lucide-react';
+import { Lock, Unlock, ArrowLeft, CreditCard, CheckCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 
 interface Article {
@@ -28,6 +29,46 @@ const ArticleDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [checkingCount, setCheckingCount] = useState(0);
+
+  // Fonction pour vérifier le statut de paiement
+  const checkPaymentStatus = async () => {
+    if (!articleId || checkingCount >= 12) return; // Limite de vérifications (1 minute)
+
+    try {
+      setCheckingPayment(true);
+      console.log(`🔍 Vérification du statut de paiement (${checkingCount + 1}/12)...`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/article/${articleId}/payment-status`);
+      const data = await response.json();
+      
+      console.log('📊 Statut de paiement récupéré:', data);
+      
+      if (data.paymentStatus === 'paid') {
+        console.log('✅ Paiement confirmé ! Mise à jour de l\'article...');
+        setHasAccess(true);
+        // Mettre à jour l'article localement
+        if (article) {
+          setArticle({
+            ...article,
+            paymentStatus: 'paid',
+            paymentDate: data.paymentDate,
+            paymentAmount: data.paymentAmount,
+            paymentMethod: data.paymentMethod
+          });
+        }
+      } else {
+        console.log('⏳ Paiement toujours en attente...');
+        setCheckingCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la vérification du statut:', error);
+      setCheckingCount(prev => prev + 1);
+    } finally {
+      setCheckingPayment(false);
+    }
+  };
 
   useEffect(() => {
     if (!articleId) {
@@ -60,12 +101,18 @@ const ArticleDetails = () => {
           
           setArticle(articleData);
           
-          // Vérifier si l'utilisateur a accès (article payé ou gratuit)
+          // Vérifier si l'utilisateur a accès
           const accessGranted = articleData.paymentStatus === 'paid' || articleData.price === 0;
           setHasAccess(accessGranted);
           
           console.log("Statut de paiement:", articleData.paymentStatus);
           console.log("Accès accordé:", accessGranted);
+          
+          // Si le statut est pending et que l'article n'est pas gratuit, commencer les vérifications
+          if (articleData.paymentStatus === 'pending' && articleData.price > 0) {
+            console.log("🚀 Démarrage des vérifications périodiques du statut de paiement...");
+            checkPaymentStatus();
+          }
         } else {
           setError('Article non trouvé');
         }
@@ -80,17 +127,33 @@ const ArticleDetails = () => {
     fetchArticle();
   }, [articleId]);
 
+  // Effet pour les vérifications périodiques
+  useEffect(() => {
+    if (article && article.paymentStatus === 'pending' && article.price > 0 && checkingCount < 12) {
+      const timer = setTimeout(() => {
+        checkPaymentStatus();
+      }, 5000); // Vérifier toutes les 5 secondes
+      
+      return () => clearTimeout(timer);
+    }
+  }, [article, checkingCount]);
+
   const handlePayment = () => {
     if (article) {
       navigate(`/payment/${article.id}`);
     }
   };
 
+  const handleManualRefresh = () => {
+    setCheckingCount(0);
+    checkPaymentStatus();
+  };
+
   if (loading) {
     return (
       <div className="article-details-container">
         <div className="loading">
-          <div className="spinner"></div>
+          <Loader2 className="w-8 h-8 animate-spin" />
           <p>Chargement de l'article...</p>
         </div>
       </div>
@@ -148,6 +211,9 @@ const ArticleDetails = () => {
                 <>
                   <Lock className="w-4 h-4" />
                   {article.price} FCFA
+                  {checkingPayment && (
+                    <RefreshCw className="w-4 h-4 animate-spin ml-2" />
+                  )}
                 </>
               )}
             </div>
@@ -179,10 +245,25 @@ const ArticleDetails = () => {
             </div>
             <h2>Contenu réservé aux membres payants</h2>
             <p>Cet article est disponible pour {article.price} FCFA.</p>
-            <button onClick={handlePayment} className="pay-button">
-              <CreditCard className="w-5 h-5" />
-              Payer pour débloquer
-            </button>
+            
+            {checkingPayment && (
+              <div className="checking-status">
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                <p>Vérification du statut de paiement en cours...</p>
+                <p>Tentative {checkingCount}/12</p>
+              </div>
+            )}
+            
+            <div className="action-buttons">
+              <button onClick={handlePayment} className="pay-button">
+                <CreditCard className="w-5 h-5" />
+                Payer pour débloquer
+              </button>
+              <button onClick={handleManualRefresh} className="refresh-button">
+                <RefreshCw className="w-5 h-5" />
+                Actualiser le statut
+              </button>
+            </div>
           </div>
         )}
       </div>
