@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../integrations/firebase/client';
 import { ArrowLeft } from 'lucide-react';
-import '../styles/ArticleDetails.css';
+
 
 interface Article {
   id: string;
