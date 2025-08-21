@@ -1,53 +1,64 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, Home } from 'lucide-react';
-
+import { CheckCircle, Home, ArrowLeft, Loader2 } from 'lucide-react';
+import '../styles/PaymentResult.css';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [paymentInfo, setPaymentInfo] = useState<any>(null);
+  const [articleId, setArticleId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Récupérer les informations de paiement depuis l'URL
-    const params = new URLSearchParams(location.search);
-    const transactionId = params.get('transaction_id');
+    // Récupérer l'ID de l'article depuis les paramètres de l'URL
+    const urlParams = new URLSearchParams(location.search);
+    const articleIdParam = urlParams.get('article_id');
     
-    if (transactionId) {
-      // Ici vous pourriez vérifier le statut du paiement auprès de votre backend
-      setPaymentInfo({
-        transactionId,
-        message: 'Votre paiement a été traité avec succès'
-      });
+    console.log('Article ID récupéré:', articleIdParam);
+    
+    if (articleIdParam) {
+      setArticleId(articleIdParam);
     }
     
     setLoading(false);
   }, [location]);
 
+  const handleViewArticle = () => {
+    if (articleId) {
+      navigate(`/article/${articleId}`);
+    } else {
+      navigate('/');
+    }
+  };
+
   if (loading) {
     return (
       <div className="payment-result-container">
-        <div>Vérification du paiement...</div>
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <p>Vérification du paiement...</p>
       </div>
     );
   }
 
   return (
-    <div className="payment-result-container">
-      <div className="result-icon success">
+    <div className="payment-result-container success">
+      <div className="result-icon">
         <CheckCircle size={64} />
       </div>
       <h1>Paiement réussi !</h1>
-      <p>Merci pour votre achat. Vous pouvez maintenant accéder à votre article.</p>
+      <p>Merci pour votre achat. Vous avez maintenant accès au contenu complet de l'article.</p>
       
-      {paymentInfo && (
-        <div className="payment-details">
-          <p><strong>ID de transaction:</strong> {paymentInfo.transactionId}</p>
+      {articleId && (
+        <div className="payment-info">
+          <p>Vous pouvez maintenant accéder à l'article que vous venez de payer.</p>
         </div>
       )}
       
       <div className="action-buttons">
+        <button onClick={handleViewArticle} className="view-article-button">
+          <ArrowLeft size={20} />
+          Voir l'article
+        </button>
         <button onClick={() => navigate('/')} className="home-button">
           <Home size={20} />
           Retour à l'accueil
