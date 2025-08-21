@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, Home, ArrowLeft, Loader2 } from 'lucide-react';
-import '../styles/PaymentResult.css';
+
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
