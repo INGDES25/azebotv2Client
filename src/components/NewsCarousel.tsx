@@ -151,7 +151,7 @@ export const NewsCarousel = () => {
       const hours = Math.floor(diffInMinutes / 60);
       return `${hours}h`;
     } else {
-      const days = Math.floor(diffInMinutes / 1440);
+      const days = Math.floor(diffInMinutes / 1440); 
       return `${days}j`;
     }
   };
