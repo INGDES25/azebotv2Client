@@ -75,57 +75,60 @@ const Payment = () => {
     fetchArticle();
   }, [articleId]);
 
-  const handlePayment = async () => {
-    if (!article) return;
+ 
+ const handlePayment = async () => {
+  if (!article) return;
 
-    try {
-      setProcessing(true);
-      setError(null);
-      
-      console.log('Envoi de la requête de paiement...');
-      
-      const response = await axios.post(`${API_BASE_URL}/api/create-payment`, {
-        amount: article.price,
-        description: `Paiement pour l'article: ${article.title}`,
-        customer: {
-          firstname: user?.displayName?.split(' ')[0] || 'Prénom',
-          lastname: user?.displayName?.split(' ')[1] || 'Nom',
-          email: user?.email || 'email@example.com'
-        },
-        articleId: article.id,
-        userId: user?.uid // Ajout de l'ID utilisateur
-      }, {
-        timeout: 10000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Réponse du serveur:', response.data);
-      
-      if (response.data.success) {
-         // Stocker l'ID de l'article dans le localStorage avant la redirection
+  try {
+    setProcessing(true);
+    setError(null);
+    
+    console.log('Envoi de la requête de paiement...');
+    
+    const response = await axios.post(`${API_BASE_URL}/api/create-payment`, {
+      amount: article.price,
+      description: `Paiement pour l'article: ${article.title}`,
+      customer: {
+        firstname: user?.displayName?.split(' ')[0] || 'Prénom',
+        lastname: user?.displayName?.split(' ')[1] || 'Nom',
+        email: user?.email || 'email@example.com'
+      },
+      articleId: article.id,
+      userId: user?.uid
+    }, {
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Réponse du serveur:', response.data);
+    
+    if (response.data.success) {
+      // Stocker l'ID de la transaction et de l'article
+      localStorage.setItem('lastTransactionId', response.data.transactionId);
       localStorage.setItem('lastArticleId', article.id);
-      console.log('Article ID stocké dans localStorage:', article.id);
+      console.log('Transaction ID stocké:', response.data.transactionId);
+      console.log('Article ID stocké:', article.id);
       
-        console.log('Redirection vers:', response.data.url);
-        window.location.replace(response.data.url);
-      } else {
-        setError(response.data.error || 'Erreur lors de la création du paiement');
-      }
-    } catch (err) {
-      console.error('Erreur lors du paiement:', err);
-      if (err.code === 'ECONNABORTED') {
-        setError('La connexion a expiré. Veuillez réessayer.');
-      } else if (err.response?.status === 0) {
-        setError('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-      } else {
-        setError(err.response?.data?.error || 'Une erreur est survenue lors du paiement');
-      }
-    } finally {
-      setProcessing(false);
+      console.log('Redirection vers:', response.data.url);
+      window.location.replace(response.data.url);
+    } else {
+      setError(response.data.error || 'Erreur lors de la création du paiement');
     }
-  };
+  } catch (err) {
+    console.error('Erreur lors du paiement:', err);
+    if (err.code === 'ECONNABORTED') {
+      setError('La connexion a expiré. Veuillez réessayer.');
+    } else if (err.response?.status === 0) {
+      setError('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+    } else {
+      setError(err.response?.data?.error || 'Une erreur est survenue lors du paiement');
+    }
+  } finally {
+    setProcessing(false);
+  }
+};
 
   const testBackendConnection = async () => {
     try {

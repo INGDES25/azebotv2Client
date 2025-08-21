@@ -3,9 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../integrations/firebase/client';
 import { useAuth } from '../hooks/useAuth';
-import { Lock, Unlock, ArrowLeft, CreditCard, CheckCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { Lock, Unlock, ArrowLeft, CreditCard, CheckCircle, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
-
 
 interface Article {
   id: string;
@@ -33,38 +32,37 @@ const ArticleDetails = () => {
   const [checkingCount, setCheckingCount] = useState(0);
 
   // Fonction pour vérifier le statut de paiement
-  const checkPaymentStatus = async () => {
-    if (!articleId || checkingCount >= 12) return; // Limite de vérifications (1 minute)
+  const checkTransactionStatus = async () => {
+    const transactionId = localStorage.getItem('lastTransactionId');
+    if (!transactionId) {
+      console.log('Aucun ID de transaction trouvé');
+      return;
+    }
 
     try {
       setCheckingPayment(true);
-      console.log(`🔍 Vérification du statut de paiement (${checkingCount + 1}/12)...`);
+      console.log('🔍 Vérification du statut de la transaction:', transactionId);
       
-      const response = await fetch(`${API_BASE_URL}/api/article/${articleId}/payment-status`);
+      const response = await fetch(`${API_BASE_URL}/api/transaction-status/${transactionId}`);
       const data = await response.json();
-      
-      console.log('📊 Statut de paiement récupéré:', data);
-      
-      if (data.paymentStatus === 'paid') {
-        console.log('✅ Paiement confirmé ! Mise à jour de l\'article...');
-        setHasAccess(true);
+      console.log('📊 Statut de la transaction:', data.status);
+
+      if (data.status === 'approved') {
+        console.log('✅ Transaction approuvée ! Mise à jour de l\'article...');
         // Mettre à jour l'article localement
-        if (article) {
-          setArticle({
-            ...article,
-            paymentStatus: 'paid',
-            paymentDate: data.paymentDate,
-            paymentAmount: data.paymentAmount,
-            paymentMethod: data.paymentMethod
-          });
-        }
+        setArticle({
+          ...article,
+          paymentStatus: 'paid',
+          paymentDate: new Date(),
+          paymentAmount: data.amount / 100,
+          paymentMethod: data.mode
+        });
+        setHasAccess(true);
       } else {
-        console.log('⏳ Paiement toujours en attente...');
-        setCheckingCount(prev => prev + 1);
+        console.log('⏳ Transaction non encore approuvée');
       }
     } catch (error) {
-      console.error('❌ Erreur lors de la vérification du statut:', error);
-      setCheckingCount(prev => prev + 1);
+      console.error('❌ Erreur lors de la vérification du statut de la transaction:', error);
     } finally {
       setCheckingPayment(false);
     }
@@ -110,8 +108,8 @@ const ArticleDetails = () => {
           
           // Si le statut est pending et que l'article n'est pas gratuit, commencer les vérifications
           if (articleData.paymentStatus === 'pending' && articleData.price > 0) {
-            console.log("🚀 Démarrage des vérifications périodiques du statut de paiement...");
-            checkPaymentStatus();
+            console.log("🚀 Démarrage des vérifications du statut de paiement...");
+            checkTransactionStatus();
           }
         } else {
           setError('Article non trouvé');
@@ -131,7 +129,9 @@ const ArticleDetails = () => {
   useEffect(() => {
     if (article && article.paymentStatus === 'pending' && article.price > 0 && checkingCount < 12) {
       const timer = setTimeout(() => {
-        checkPaymentStatus();
+        console.log(`🔄 Vérification automatique (${checkingCount + 1}/12)...`);
+        setCheckingCount(prev => prev + 1);
+        checkTransactionStatus();
       }, 5000); // Vérifier toutes les 5 secondes
       
       return () => clearTimeout(timer);
@@ -146,14 +146,14 @@ const ArticleDetails = () => {
 
   const handleManualRefresh = () => {
     setCheckingCount(0);
-    checkPaymentStatus();
+    checkTransactionStatus();
   };
 
   if (loading) {
     return (
       <div className="article-details-container">
         <div className="loading">
-          <Loader2 className="w-8 h-8 animate-spin" />
+          <div className="spinner"></div>
           <p>Chargement de l'article...</p>
         </div>
       </div>
