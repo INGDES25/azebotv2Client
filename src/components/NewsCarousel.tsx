@@ -204,7 +204,7 @@ export const NewsCarousel = () => {
                 return (
                   <div 
                     key={news.id} 
-                    className="flex-[0_0_320px] min-w-[320px] pl-6"
+                    className="flex-[0_0_320px] min-w-[320px] pl-6" 
                   >
                     <div 
                       className="group bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden h-[420px] cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30"
