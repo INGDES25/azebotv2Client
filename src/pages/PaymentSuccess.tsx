@@ -13,21 +13,16 @@ const PaymentSuccess = () => {
     console.log('=== PaymentSuccess Component Mounted ===');
     console.log('Full URL:', window.location.href);
     
-    // Méthode 1: Récupérer depuis les paramètres de l'URL
+    // Récupérer l'ID de l'article depuis les paramètres de l'URL
     const urlParams = new URLSearchParams(location.search);
     let articleIdParam = urlParams.get('article_id');
+    
     console.log('Article ID from URL:', articleIdParam);
     
-    // Méthode 2: Si non trouvé, essayer depuis le localStorage
+    // Si non trouvé, essayer depuis le localStorage
     if (!articleIdParam) {
       articleIdParam = localStorage.getItem('lastArticleId');
       console.log('Article ID from localStorage:', articleIdParam);
-    }
-    
-    // Méthode 3: Si toujours non trouvé, essayer depuis le sessionStorage
-    if (!articleIdParam) {
-      articleIdParam = sessionStorage.getItem('lastArticleId');
-      console.log('Article ID from sessionStorage:', articleIdParam);
     }
     
     if (articleIdParam) {
@@ -41,24 +36,13 @@ const PaymentSuccess = () => {
   }, [location]);
 
   const handleViewArticle = () => {
-    console.log('handleViewArticle called with articleId:', articleId);
-    
     if (articleId) {
-      console.log('Navigating to:', `/article/${articleId}`);
+      console.log('Navigating to article:', articleId);
       navigate(`/article/${articleId}`);
     } else {
       console.log('No articleId, navigating to home');
       navigate('/');
     }
-  };
-
-  const handleDebug = () => {
-    console.log('=== DEBUG INFO ===');
-    console.log('URL:', window.location.href);
-    console.log('URL params:', location.search);
-    console.log('Article ID:', articleId);
-    console.log('localStorage:', localStorage.getItem('lastArticleId'));
-    console.log('sessionStorage:', sessionStorage.getItem('lastArticleId'));
   };
 
   if (loading) {
@@ -81,17 +65,11 @@ const PaymentSuccess = () => {
       <div className="debug-info">
         <p><strong>Article ID:</strong> {articleId || 'Non trouvé'}</p>
         <p><strong>URL:</strong> {window.location.href}</p>
-        <p><strong>URL params:</strong> {location.search}</p>
-        <p><strong>localStorage:</strong> {localStorage.getItem('lastArticleId')}</p>
       </div>
       
-      {articleId ? (
+      {articleId && (
         <div className="payment-info">
           <p>Vous pouvez maintenant accéder à l'article que vous venez de payer.</p>
-        </div>
-      ) : (
-        <div className="payment-info error">
-          <p>⚠️ Impossible de retrouver l'article. Vous pouvez retourner à l'accueil pour le retrouver.</p>
         </div>
       )}
       
@@ -105,9 +83,6 @@ const PaymentSuccess = () => {
         <button onClick={() => navigate('/')} className="home-button">
           <Home size={20} />
           Retour à l'accueil
-        </button>
-        <button onClick={handleDebug} className="debug-button">
-          Debug Info
         </button>
       </div>
     </div>

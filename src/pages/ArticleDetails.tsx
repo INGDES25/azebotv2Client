@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../integrations/firebase/client';
 import { useAuth } from '../hooks/useAuth';
-import { Lock, Unlock, ArrowLeft, CreditCard, CheckCircle, RefreshCw } from 'lucide-react';
-import { API_BASE_URL } from '../config/api';
+import { Lock, Unlock, ArrowLeft, CreditCard, CheckCircle } from 'lucide-react';
+
 
 interface Article {
   id: string;
@@ -18,6 +18,7 @@ interface Article {
   paymentDate?: any;
   paymentAmount?: number;
   paymentMethod?: string;
+  paidBy?: string; // ID de l'utilisateur qui a payé
 }
 
 const ArticleDetails = () => {
@@ -28,45 +29,6 @@ const ArticleDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
-  const [checkingPayment, setCheckingPayment] = useState(false);
-  const [checkingCount, setCheckingCount] = useState(0);
-
-  // Fonction pour vérifier le statut de paiement
-  const checkTransactionStatus = async () => {
-    const transactionId = localStorage.getItem('lastTransactionId');
-    if (!transactionId) {
-      console.log('Aucun ID de transaction trouvé');
-      return;
-    }
-
-    try {
-      setCheckingPayment(true);
-      console.log('🔍 Vérification du statut de la transaction:', transactionId);
-      
-      const response = await fetch(`${API_BASE_URL}/api/transaction-status/${transactionId}`);
-      const data = await response.json();
-      console.log('📊 Statut de la transaction:', data.status);
-
-      if (data.status === 'approved') {
-        console.log('✅ Transaction approuvée ! Mise à jour de l\'article...');
-        // Mettre à jour l'article localement
-        setArticle({
-          ...article,
-          paymentStatus: 'paid',
-          paymentDate: new Date(),
-          paymentAmount: data.amount / 100,
-          paymentMethod: data.mode
-        });
-        setHasAccess(true);
-      } else {
-        console.log('⏳ Transaction non encore approuvée');
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors de la vérification du statut de la transaction:', error);
-    } finally {
-      setCheckingPayment(false);
-    }
-  };
 
   useEffect(() => {
     if (!articleId) {
@@ -94,23 +56,31 @@ const ArticleDetails = () => {
             paymentStatus: data.paymentStatus || 'pending',
             paymentDate: data.paymentDate,
             paymentAmount: data.paymentAmount,
-            paymentMethod: data.paymentMethod
+            paymentMethod: data.paymentMethod,
+            paidBy: data.paidBy
           } as Article;
           
           setArticle(articleData);
           
           // Vérifier si l'utilisateur a accès
-          const accessGranted = articleData.paymentStatus === 'paid' || articleData.price === 0;
+          let accessGranted = false;
+          if (articleData.price === 0) {
+            // Article gratuit
+            accessGranted = true;
+          } else if (articleData.paymentStatus === 'paid') {
+            // Article payé
+            if (user && user.uid === articleData.paidBy) {
+              // L'utilisateur connecté est celui qui a payé
+              accessGranted = true;
+            }
+          }
+          
           setHasAccess(accessGranted);
           
           console.log("Statut de paiement:", articleData.paymentStatus);
+          console.log("Utilisateur connecté:", user?.uid);
+          console.log("Payé par:", articleData.paidBy);
           console.log("Accès accordé:", accessGranted);
-          
-          // Si le statut est pending et que l'article n'est pas gratuit, commencer les vérifications
-          if (articleData.paymentStatus === 'pending' && articleData.price > 0) {
-            console.log("🚀 Démarrage des vérifications du statut de paiement...");
-            checkTransactionStatus();
-          }
         } else {
           setError('Article non trouvé');
         }
@@ -123,30 +93,12 @@ const ArticleDetails = () => {
     };
 
     fetchArticle();
-  }, [articleId]);
-
-  // Effet pour les vérifications périodiques
-  useEffect(() => {
-    if (article && article.paymentStatus === 'pending' && article.price > 0 && checkingCount < 12) {
-      const timer = setTimeout(() => {
-        console.log(`🔄 Vérification automatique (${checkingCount + 1}/12)...`);
-        setCheckingCount(prev => prev + 1);
-        checkTransactionStatus();
-      }, 5000); // Vérifier toutes les 5 secondes
-      
-      return () => clearTimeout(timer);
-    }
-  }, [article, checkingCount]);
+  }, [articleId, user]);
 
   const handlePayment = () => {
     if (article) {
       navigate(`/payment/${article.id}`);
     }
-  };
-
-  const handleManualRefresh = () => {
-    setCheckingCount(0);
-    checkTransactionStatus();
   };
 
   if (loading) {
@@ -211,9 +163,6 @@ const ArticleDetails = () => {
                 <>
                   <Lock className="w-4 h-4" />
                   {article.price} FCFA
-                  {checkingPayment && (
-                    <RefreshCw className="w-4 h-4 animate-spin ml-2" />
-                  )}
                 </>
               )}
             </div>
@@ -245,25 +194,10 @@ const ArticleDetails = () => {
             </div>
             <h2>Contenu réservé aux membres payants</h2>
             <p>Cet article est disponible pour {article.price} FCFA.</p>
-            
-            {checkingPayment && (
-              <div className="checking-status">
-                <RefreshCw className="w-5 h-5 animate-spin" />
-                <p>Vérification du statut de paiement en cours...</p>
-                <p>Tentative {checkingCount}/12</p>
-              </div>
-            )}
-            
-            <div className="action-buttons">
-              <button onClick={handlePayment} className="pay-button">
-                <CreditCard className="w-5 h-5" />
-                Payer pour débloquer
-              </button>
-              <button onClick={handleManualRefresh} className="refresh-button">
-                <RefreshCw className="w-5 h-5" />
-                Actualiser le statut
-              </button>
-            </div>
+            <button onClick={handlePayment} className="pay-button">
+              <CreditCard className="w-5 h-5" />
+              Payer pour débloquer
+            </button>
           </div>
         )}
       </div>
