@@ -27,6 +27,11 @@ export default defineConfig(({ mode }) => ({
   },
 
   build: {
+      rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
     // Pour s'assurer que les ressources sont bien chargées
     assetsInlineLimit: 4096,
   },
