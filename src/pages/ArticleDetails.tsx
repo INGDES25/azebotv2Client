@@ -4,7 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../integrations/firebase/client';
 import { useAuth } from '../hooks/useAuth';
 import { Lock, Unlock, ArrowLeft, CreditCard, CheckCircle } from 'lucide-react';
-import '../styles/ArticleDetails.css';
+
 
 interface Article {
   id: string;

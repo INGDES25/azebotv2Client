@@ -208,7 +208,11 @@ export const NewsCarousel = () => {
                   >
                     <div 
                       className="group bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden h-[420px] cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30"
-                      
+                      onClick={() => {
+                        console.log("Navigation vers:", `/article/${news.id}`);
+                        console.log("ID de l'article:", news.id);
+                        navigate(`/article/${news.id}`); // Redirection vers la page de détails
+                      }}
                     >
                       {/* Content */}
                       <div className="p-6 flex flex-col h-full">
